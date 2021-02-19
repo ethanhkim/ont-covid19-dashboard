@@ -1,5 +1,10 @@
+# EDA notebooks
 ont-covid19-dashboard/EDA_look.ipynb
 ont-covid19-dashboard/Untitled.ipynb
+# Heroku files
 Procfile
+setup.sh
+# VS Code files
 **/.vscode/
+# Mac-specific files
 .DS_Store
