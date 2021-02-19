@@ -86,7 +86,7 @@ def date_selection(summary_data, date_range):
 
     df = summary_data
     
-    if date_range == 'Today':
+    if date_range == 'All Weeks':
         df_filtered = df
     elif date_range == 'Last Week':
         df_filtered = df.tail(7)
@@ -122,9 +122,10 @@ def create_pie_chart_df(summary_data):
 
     pie_chart_df = df.iloc[:, [0, 11, 12, 15]]
     pie_chart_df = pie_chart_df.rename(columns={
-        'New_Resolved':'Resolved Cases',
+        'New_Total_Lineage_B.1.1.7':'B.1.1.7 Variant',
         'New_Total_Cases':'New Cases',
-        'New_Deaths':'Deaths'})
+        'New_Total_Lineage_B.1.351':'B.1.351 Variant',
+        'New_Total_Lineage_P.1':'P.1 Variant'})
     pie_chart_df = pie_chart_df.melt(id_vars = ['Date'])
     pie_chart_df = pie_chart_df[pie_chart_df['Date'].str.contains(today.strftime('%Y-%m-%d'))]
     
@@ -134,7 +135,7 @@ def create_pie_chart_df(summary_data):
 ## Streamlit Date Range Selector ##
 daterange_selection = st.sidebar.selectbox(
     "Date range to visualize:",
-    ('Today', 'Last Week', 'Last 2 weeks', 
+    ('All Weeks', 'Last Week', 'Last 2 weeks', 
     'Last Month', 'Last 3 Months', 
     'Last 6 Months')
 )
@@ -144,7 +145,9 @@ covid_data = load_data()
 formatted_data = format_data(covid_data)
 
 # Columns for summary
-summary_columns = ['Total_Cases', 'Deaths', 'Number_hospitalized','Number_ICU', 'Resolved', 'Total_tests_completed', 'Active_Cases']
+summary_columns = ['Total_Cases', 'Deaths', 'Number_hospitalized','Number_ICU', 
+                    'Resolved', 'Total_tests_completed', 'Active_Cases', 'Total_Lineage_B.1.1.7',
+                    'Total_Lineage_B.1.351', 'Total_Lineage_P.1']
 summary_data = create_diff_columns(formatted_data, summary_columns)
 # Subset the summary data by user selection from daterange_selection
 subset_summary_data = date_selection(summary_data, daterange_selection)
@@ -152,6 +155,19 @@ subset_summary_data = date_selection(summary_data, daterange_selection)
 # Change all column type to int64 except Date and Percent positive cases
 subset_summary_data = change_dtypes(subset_summary_data)
 
+# Data specifically for cases with new variants
+variant_subset = subset_summary_data[['Date', 'New_Total_Cases', 'New_Total_Lineage_B.1.1.7',
+                                      'New_Total_Lineage_B.1.351', 'New_Total_Lineage_P.1']]
+variant_subset['New_Base_Strain'] = variant_subset['New_Total_Cases'] - variant_subset['New_Total_Lineage_B.1.1.7'] - variant_subset['New_Total_Lineage_B.1.351'] - variant_subset['New_Total_Lineage_P.1'] 
+variant_subset = variant_subset.drop(columns = ['New_Total_Cases'])
+variant_subset = variant_subset.rename(columns={
+    'New_Base_Strain':'Base COVID-19 Strain',
+    'New_Total_Lineage_B.1.1.7':'B.1.1.7 Variant (UK)',
+    'New_Total_Lineage_B.1.351':'B.1.351 Variant (South Africa)',
+    'New_Total_Lineage_P.1':'P.1 Variant (Brazil)'})
+variant_subset_long = variant_subset.melt(id_vars = ['Date'])
+variant_subset_long = variant_subset_long.sort_values(by=['Date'])
+variant_subset_long = variant_subset_long.reset_index()
 
 # Initialize lists to run for loops for summary_columns
 data_points_today = []
@@ -177,7 +193,7 @@ daily_summary = st.beta_container()
 col1, col2, col3 = st.beta_columns(3)
 # Write data inside container
 with daily_summary:
-    st.header('Summary of today')
+    st.header("Summary of Today:")
     today = date.today() 
     st.subheader(today.strftime('%B %d, %Y'))
 
@@ -187,16 +203,17 @@ with daily_summary:
         st.text('')
         st.markdown(':small_blue_diamond: ' + 'New cases: ' + str(data_points_today[0]))
         st.markdown(':small_blue_diamond: ' + 'Resolved cases: ' + str(data_points_today[4]))
-        st.markdown(':small_blue_diamond: ' + 'Active cases: ' + str(subset_summary_data.iloc[-1, 10]))
+        st.markdown(':small_blue_diamond: ' + 'Active cases: ' + str(subset_summary_data.iloc[-1, 13]))
         st.markdown(':small_blue_diamond: ' + 'Deaths: ' + str(data_points_today[1]))
-        st.markdown(':small_blue_diamond: ' + 'Hospitalizations: ' + str(subset_summary_data.iloc[-1, 13]))
+        st.markdown(':small_blue_diamond: ' + 'Hospitalizations: ' + str(subset_summary_data.iloc[-1, 16]))
         st.markdown(':small_blue_diamond: ' + 'New patients in the ICU: ' + str(subset_summary_data.iloc[-1, -4]))
-        st.markdown(':small_blue_diamond: ' + 'Tests today: ' + str(subset_summary_data.iloc[-1, -2]))
+        st.markdown(':small_blue_diamond: ' + 'Tests today: ' + str(subset_summary_data.iloc[-1, -5]))
         st.markdown(':small_blue_diamond: ' + 'Percent positive tests today: ' + str(subset_summary_data.iloc[-1, 6]) + '%')
     
     with col2:
-        pie_chart_df = create_pie_chart_df(subset_summary_data)
+        pie_chart_df = variant_subset_long.tail(4)
         pie_chart = px.pie(pie_chart_df, values = 'value', names = 'variable')
+        pie_chart.update_layout( xaxis_title='',yaxis_title='')
         st.plotly_chart(pie_chart)
 
 ## Last 5 days table ##
@@ -227,7 +244,7 @@ with data_table:
         cols[0].markdown(subset_summary_data.iloc[-i, 0])
         cols[1].markdown(subset_summary_data.iloc[-i, 4])
         cols[2].markdown(subset_summary_data.iloc[-i, 2])
-        cols[3].markdown(subset_summary_data.iloc[-i, 10])
+        cols[3].markdown(subset_summary_data.iloc[-i, 13])
         cols[4].markdown(subset_summary_data.iloc[-i, 3])
         cols[5].markdown(subset_summary_data.iloc[-i, 7])
         cols[6].markdown(subset_summary_data.iloc[-i, 8])
@@ -244,14 +261,23 @@ with graph_container:
     st.header('Graphs')
     st.text('')
 
-    new_cases_fig = px.bar(subset_summary_data, x = "Date", y = "New_Total_Cases")
-    new_cases_fig.update_layout(title = 'New Total Cases', xaxis_title='',yaxis_title='')
+    total_cases_fig = px.bar(subset_summary_data, x = 'Date', y = "Total_Cases")
+    total_cases_fig.update_layout(title="Total Cases", xaxis_title='', yaxis_title='')
+
+    active_cases_fig = px.bar(subset_summary_data, x = "Date", y = "Active_Cases")
+    active_cases_fig.update_layout(title = 'Active Cases', xaxis_title='',yaxis_title='')
+
+    new_cases_fig = px.bar(subset_summary_data, x='Date', y = "New_Total_Cases")
+    new_cases_fig.update_layout(title = "New Cases", xaxis_title="", yaxis_title="")
+
+    total_deaths_fig = px.bar(subset_summary_data, x='Date', y='Deaths')
+    total_deaths_fig.update_layout(title = 'Total Deaths', xaxis_title='', yaxis_title='')
 
     new_deaths_fig = px.bar(subset_summary_data, x = "Date", y = "New_Deaths")
     new_deaths_fig.update_layout(title='New Deaths', xaxis_title='',yaxis_title='')
 
     new_hosp_fig = px.bar(subset_summary_data, x = "Date", y = "New_Number_hospitalized")
-    new_hosp_fig.update_layout(title='New number of patients hospitalized', xaxis_title='',yaxis_title='')
+    new_hosp_fig.update_layout(title='New patients hospitalized', xaxis_title='',yaxis_title='')
 
     new_ICU_fig = px.bar(subset_summary_data, x = "Date", y = "New_Number_ICU")
     new_ICU_fig.update_layout(title='New number of patients in the ICU', xaxis_title='',yaxis_title='')
@@ -259,9 +285,15 @@ with graph_container:
     new_resolved_fig = px.bar(subset_summary_data, x = "Date", y = "New_Resolved")
     new_resolved_fig.update_layout(title='New number of cases resolved', xaxis_title='',yaxis_title='')
 
-
+    st.plotly_chart(total_cases_fig, use_container_width=True)
+    st.plotly_chart(active_cases_fig, use_container_width=True)
     st.plotly_chart(new_cases_fig, use_container_width=True)
+    st.plotly_chart(total_deaths_fig, use_container_width=True)
     st.plotly_chart(new_deaths_fig, use_container_width=True)
     st.plotly_chart(new_hosp_fig, use_container_width=True)
     st.plotly_chart(new_ICU_fig, use_container_width=True)
     st.plotly_chart(new_resolved_fig, use_container_width=True)
+
+st.text('')
+st.text('')
+st.text("This dashboard uses data from the Government of Ontario, updated daily and available freely through the Open Government License - Ontario.")
