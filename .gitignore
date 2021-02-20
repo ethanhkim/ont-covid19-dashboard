@@ -1,15 +1,6 @@
 # EDA notebooks
 ont-covid19-dashboard/EDA_look.ipynb
 ont-covid19-dashboard/Untitled.ipynb
-# Heroku files
-Procfile
-setup.sh
-covid19_dashboard/covid19_dashboard/__init__.py
-covid19_dashboard/covid19_dashboard/asgi.py
-covid19_dashboard/covid19_dashboard/settings.py
-covid19_dashboard/covid19_dashboard/urls.py
-covid19_dashboard/covid19_dashboard/wsgi.py
-covid19_dashboard/manage.py
 # VS Code files
 **/.vscode/
 # Mac-specific files
