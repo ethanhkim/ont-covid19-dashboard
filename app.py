@@ -162,15 +162,20 @@ subset_summary_data = change_dtypes(subset_summary_data)
 # Data specifically for cases with new variants
 variant_subset = subset_summary_data[['Date', 'New_Total_Cases', 'New_Total_Lineage_B.1.1.7',
                                       'New_Total_Lineage_B.1.351', 'New_Total_Lineage_P.1']]
+# Calculate the number of base strain cases
 variant_subset['New_Base_Strain'] = variant_subset['New_Total_Cases'] - variant_subset['New_Total_Lineage_B.1.1.7'] - variant_subset['New_Total_Lineage_B.1.351'] - variant_subset['New_Total_Lineage_P.1'] 
 variant_subset = variant_subset.drop(columns = ['New_Total_Cases'])
+# Rename columns
 variant_subset = variant_subset.rename(columns={
     'New_Base_Strain':'Base COVID-19 Strain',
     'New_Total_Lineage_B.1.1.7':'B.1.1.7 Variant (UK)',
     'New_Total_Lineage_B.1.351':'B.1.351 Variant (South Africa)',
     'New_Total_Lineage_P.1':'P.1 Variant (Brazil)'})
+# Pivot to long format
 variant_subset_long = variant_subset.melt(id_vars = ['Date'])
+# Sort by date
 variant_subset_long = variant_subset_long.sort_values(by=['Date'])
+# Reset the index to have the data sorted by date
 variant_subset_long = variant_subset_long.reset_index()
 
 # Initialize lists to run for loops for summary_columns
