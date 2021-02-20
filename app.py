@@ -10,11 +10,14 @@ st.set_page_config(layout="wide")
 # Cache data for quicker loading
 @st.cache 
 
-def load_data():
+def load_data(type):
     ''' Load the most recent COVID-19 data from the Ontario Government.'''
-    
-    df = pd.read_csv('https://data.ontario.ca/dataset/f4f86e54-872d-43f8-8a86-3892fd3cb5e6/resource/ed270bb8-340b-41f9-a7c6-e8ef587e6d11/download')
-    df = df.fillna(0)
+
+    if type == 'COVID':
+        df = pd.read_csv('https://data.ontario.ca/dataset/f4f86e54-872d-43f8-8a86-3892fd3cb5e6/resource/ed270bb8-340b-41f9-a7c6-e8ef587e6d11/download')
+        df = df.fillna(0)
+    elif type == 'Vaccine':
+        df = pd.read_csv("https://data.ontario.ca/dataset/752ce2b7-c15a-4965-a3dc-397bf405e7cc/resource/8a89caa9-511c-4568-af89-7f2174b4378c/download/vaccine_doses.csv")
     return df 
 
 def format_data(source_data):
@@ -141,10 +144,11 @@ daterange_selection = st.sidebar.selectbox(
 )
 
 # Load in and format data
-covid_data = load_data()
+covid_data = load_data('COVID')
+vaccine_data = load_data('Vaccine')
 formatted_data = format_data(covid_data)
 
-# Columns for summary
+# Columns for COVID summary 
 summary_columns = ['Total_Cases', 'Deaths', 'Number_hospitalized','Number_ICU', 
                     'Resolved', 'Total_tests_completed', 'Active_Cases', 'Total_Lineage_B.1.1.7',
                     'Total_Lineage_B.1.351', 'Total_Lineage_P.1']
@@ -209,12 +213,18 @@ with daily_summary:
         st.markdown(':small_blue_diamond: ' + 'New patients in the ICU: ' + str(subset_summary_data.iloc[-1, -4]))
         st.markdown(':small_blue_diamond: ' + 'Tests today: ' + str(subset_summary_data.iloc[-1, -5]))
         st.markdown(':small_blue_diamond: ' + 'Percent positive tests today: ' + str(subset_summary_data.iloc[-1, 6]) + '%')
+        st.markdown(':small_blue_diamond: ' + 'Vaccines administered: ' + str(vaccine_data.iloc[-1, 1]))
+        st.markdown(':small_blue_diamond: ' + 'Total doses administered: ' + str(vaccine_data.iloc[-1, 2]))
+        st.markdown(':small_blue_diamond: ' + 'Fully vaccinated individuals: ' + str(vaccine_data.iloc[-1, 4]))
     
     with col2:
         pie_chart_df = variant_subset_long.tail(4)
         pie_chart = px.pie(pie_chart_df, values = 'value', names = 'variable')
         pie_chart.update_layout( xaxis_title='',yaxis_title='')
         st.plotly_chart(pie_chart)
+
+st.text('')
+st.text('')
 
 ## Last 5 days table ##
 # Set container #
@@ -285,6 +295,9 @@ with graph_container:
     new_resolved_fig = px.bar(subset_summary_data, x = "Date", y = "New_Resolved")
     new_resolved_fig.update_layout(title='New number of cases resolved', xaxis_title='',yaxis_title='')
 
+    vaccination_fig = px.bar(vaccine_data, x = "report_date", y = "total_individuals_fully_vaccinated")
+    vaccination_fig.update_layout(title = "Fully vaccinated individuals", xaxis_title='', yaxis_title='')
+
     st.plotly_chart(total_cases_fig, use_container_width=True)
     st.plotly_chart(active_cases_fig, use_container_width=True)
     st.plotly_chart(new_cases_fig, use_container_width=True)
@@ -293,6 +306,7 @@ with graph_container:
     st.plotly_chart(new_hosp_fig, use_container_width=True)
     st.plotly_chart(new_ICU_fig, use_container_width=True)
     st.plotly_chart(new_resolved_fig, use_container_width=True)
+    st.plotly_chart(vaccination_fig, use_container_width=True)
 
 st.text('')
 st.text('')
