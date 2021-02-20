@@ -8,5 +8,5 @@ This will get updated periodically in terms of layout, but the functionality sho
 
 Thanks for checking this out! 
 
--- Update: Feb. 19 --
-Vaccination data hasn't been added yet, but is on the docket!
+-- Update: Feb. 20 --
+Vaccination data has been added.
