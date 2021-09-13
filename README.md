@@ -9,4 +9,4 @@ This will get updated periodically in terms of layout, but the functionality sho
 Thanks for checking this out! 
 
 -- Update: Sep. 13/21 --
-Layout of the dashboard has been changed to allow viewing of specific data - e.g., vaccination-specific data.
+Layout of the dashboard has been changed to allow viewing of specific data - e.g., vaccination-specific data. It's currently under a rebuild, apologies for the (currently) messy data!
